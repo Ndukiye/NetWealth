@@ -9,7 +9,6 @@ import { formatDate } from '@/lib/format';
 import { Alert, AlertSettings } from '@/lib/types';
 
 function SettingsContent() {
-  const [settings, setSettings] = useState<AlertSettings | null>(null);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [telegramChatId, setTelegramChatId] = useState('');
   const [alertsEnabled, setAlertsEnabled] = useState(false);
@@ -26,7 +25,6 @@ function SettingsContent() {
   useEffect(() => {
     Promise.all([api.get<AlertSettings>('/alerts/settings'), loadAlerts()])
       .then(([s]) => {
-        setSettings(s);
         setAlertsEnabled(s.alertsEnabled);
         setTelegramChatId(s.telegramChatId ?? '');
       })
@@ -40,11 +38,10 @@ function SettingsContent() {
     setMessage('');
     setSaving(true);
     try {
-      const updated = await api.patch<AlertSettings>('/alerts/settings', {
+      await api.patch<AlertSettings>('/alerts/settings', {
         alertsEnabled,
         telegramChatId: telegramChatId || undefined,
       });
-      setSettings(updated);
       setMessage('Settings saved.');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Failed to save settings');
@@ -155,7 +152,7 @@ function SettingsContent() {
         </h2>
         {alerts.length === 0 ? (
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            No alerts sent yet. Try "Send test alert" above.
+            No alerts sent yet. Try &quot;Send test alert&quot; above.
           </p>
         ) : (
           <ul className="flex flex-col gap-2.5">
