@@ -8,7 +8,8 @@ light/dark theme toggle.
 
 See [`FEATURES.md`](./FEATURES.md) for a full feature walkthrough, a
 step-by-step guide to testing everything, and an audit of this build against
-the original MVP brief.
+the original MVP brief. See [`DEPLOYMENT.md`](./DEPLOYMENT.md) for how to
+host it (Render for the API, Vercel for the web app).
 
 ## Stack
 

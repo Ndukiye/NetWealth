@@ -1,0 +1,49 @@
+services:
+  - type: web
+    name: netwealth-api
+    runtime: node
+    rootDir: api
+    plan: free
+    buildCommand: npm install && npx prisma generate && npm run build
+    startCommand: npx prisma migrate deploy && npm run start:prod
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: netwealth-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: BANK_PROVIDER
+        value: mock
+      - key: MONO_SECRET_KEY
+        sync: false
+      - key: OKRA_SECRET_KEY
+        sync: false
+      - key: BANK_WEBHOOK_SECRET
+        generateValue: true
+      - key: SCHEDULED_SYNC_ENABLED
+        value: "true"
+      - key: CATEGORIZER
+        value: mock
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: AI_ADVISOR
+        value: rule-based
+      - key: ALERT_CHANNEL
+        value: mock
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      # Set this after the frontend is deployed to Vercel, e.g.
+      # https://netwealth.vercel.app (no trailing slash). Leave unset to
+      # allow all origins, which is fine for an initial deploy.
+      - key: CORS_ORIGIN
+        sync: false
+
+databases:
+  - name: netwealth-db
+    plan: free
+    databaseName: netwealth
+    user: netwealth
