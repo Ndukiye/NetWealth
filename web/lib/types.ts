@@ -129,6 +129,66 @@ export interface AffordCheckResult {
   message: string;
 }
 
+export type RiskAppetite = 'CONSERVATIVE' | 'BALANCED' | 'AGGRESSIVE';
+
+export type PlanGoalType = 'RETIREMENT' | 'TARGET_AMOUNT' | 'WEALTH_GROWTH';
+
+export interface PlannerDefaults {
+  suggestedMonthlyLifestyleCost: number;
+  startingCapital: number;
+  detectedMonthlyIncome: number;
+  currentMonthlySavings: number;
+  netWorth: number;
+}
+
+export interface AllocationSlice {
+  assetClass: string;
+  pct: number;
+  note: string;
+}
+
+export type PlanFeasibility = 'on_track' | 'achievable' | 'stretch' | 'unrealistic' | 'projection';
+
+export interface FinancialPlan {
+  goalType: PlanGoalType;
+  goalLabel: string;
+  feasibility: PlanFeasibility;
+  headline: string;
+  horizonYears: number;
+  targetCorpus: number | null;
+  projectedCorpus: number;
+  requiredMonthlySavings: number;
+  currentMonthlySavings: number;
+  suggestedSavingsRate: number | null;
+  lifestyleBudget: number | null;
+  startingCapital: number;
+  riskAppetite: RiskAppetite;
+  expectedRealReturn: number;
+  safeWithdrawalRate: number | null;
+  allocation: AllocationSlice[];
+  advice: string[];
+  assumptions: string[];
+}
+
+export interface ChatReply {
+  reply: string;
+  suggestions: string[];
+}
+
+export type ReviewStatus = 'good' | 'watch' | 'action';
+
+export interface ReviewItem {
+  area: string;
+  status: ReviewStatus;
+  headline: string;
+  detail: string;
+}
+
+export interface FinancialReview {
+  summary: string;
+  items: ReviewItem[];
+}
+
 export interface AlertSettings {
   alertsEnabled: boolean;
   telegramChatId: string | null;

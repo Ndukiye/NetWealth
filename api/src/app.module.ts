@@ -13,6 +13,7 @@ import { GoalsModule } from './goals/goals.module';
 import { ReportsModule } from './reports/reports.module';
 import { InsightsModule } from './insights/insights.module';
 import { SimulatorModule } from './simulator/simulator.module';
+import { PlannerModule } from './planner/planner.module';
 import { AlertsModule } from './alerts/alerts.module';
 import { HealthModule } from './health/health.module';
 
@@ -32,6 +33,7 @@ import { HealthModule } from './health/health.module';
     ReportsModule,
     InsightsModule,
     SimulatorModule,
+    PlannerModule,
     AlertsModule,
     HealthModule,
   ],

@@ -12,7 +12,7 @@ export function BottomNav() {
   if (!user) return null;
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-slate-200 bg-white/95 backdrop-blur-md dark:border-white/5 dark:bg-slate-950/95 md:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-slate-200 bg-white/95 backdrop-blur-md dark:border-white/5 dark:bg-slate-950/95 lg:hidden">
       <div className="flex items-stretch justify-between px-1 pb-[env(safe-area-inset-bottom)]">
         {NAV_LINKS.map((link) => {
           const Icon = link.icon;

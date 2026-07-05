@@ -14,7 +14,7 @@ import { TrendingUp, TrendingDown } from 'lucide-react';
 import { Protected } from '@/components/protected';
 import { Card, PageHeader, Skeleton } from '@/components/ui';
 import { HealthScoreGauge } from '@/components/health-score-gauge';
-import { InsightsPanel } from '@/components/insights-panel';
+import { InsightToast } from '@/components/insight-toast';
 import { AffordCheck } from '@/components/afford-check';
 import { api } from '@/lib/api';
 import { formatCurrency, ACCOUNT_TYPE_LABELS } from '@/lib/format';
@@ -102,7 +102,7 @@ function DashboardContent() {
         </Card>
       </div>
 
-      {snapshot && <InsightsPanel insights={snapshot.insights} />}
+      {snapshot && <InsightToast insights={snapshot.insights} />}
 
       <AffordCheck categories={categories} />
 

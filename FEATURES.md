@@ -147,9 +147,13 @@ goals — no external calls, no hallucination risk:
   (naming your biggest expense category and, if you have one, a goal to
   redirect savings toward), or a pat on the back if it's over 20%.
 
-It's presented as a small, dismissible-feeling card list on the dashboard —
-not a modal, not a popup, nothing blocking — by design (the request that
-prompted this feature was explicitly for something "non-evasive").
+It's presented as a **single rotating popup pinned to the corner of the
+dashboard** (`components/insight-toast.tsx`) — one insight at a time,
+auto-cycling every few seconds, with dots/arrows to navigate and pause-on-
+hover — rather than a list that grows longer as insights pile up. The ✕
+button collapses it to a small sparkles bubble that brings it back on tap.
+Non-blocking by design (the request that prompted this feature was
+explicitly for something non-intrusive).
 
 **This is a deterministic rule engine, not an LLM call** — same input always
 produces the same output, and every number in an insight message traces back
@@ -158,15 +162,93 @@ to a real query against your data. It's built behind an `AiAdvisor` interface
 for an OpenAI-backed implementation later (`AI_ADVISOR=openai` in
 `api/.env`) without touching the dashboard code.
 
-**Try it:** `/dashboard` — the "AI Insights" card. The seed data is
-deliberately built with ~4 months of recurring DSTV/Netflix charges and
-salary payments so subscription/salary detection has something real to find;
-try `POST /bank/accounts/:id/sync` a few times or add manual transactions to
-watch the health score and insights change.
+**Try it:** `/dashboard` — the popup in the bottom-right corner. The seed
+data is deliberately built with ~4 months of recurring DSTV/Netflix charges
+and salary payments so subscription/salary detection has something real to
+find; try `POST /bank/accounts/:id/sync` a few times or add manual
+transactions to watch the health score and insights change.
 
 ---
 
-## 7. "Can I afford this?" purchase simulator
+## 7. AI Coach — your financial advisor
+
+The `/coach` page (`api/src/planner`) is the "personal wealth manager"
+feature: tell it what you're aiming for and your risk appetite, and it
+builds a plan **from your real NetWealth data** — balances, detected income,
+and actual spending. Three parts:
+
+**a) Ask the advisor** (`POST /planner/chat`) — a chat box where you type
+questions in plain English: *"I have ₦1m and want to retire at 40, what
+should I do?"*, *"What should I invest in? I don't like risk"*, *"Can I
+afford ₦250k?"*, *"I want to buy a house of ₦20m in 5 years"*, *"How am I
+doing financially?"*. It parses amounts (`1m`, `₦500k`, `2 million`), ages,
+horizons, and risk phrasing (including negations like "I don't like risky
+investments" → conservative) out of the question, routes to an intent, and
+answers with real numbers from your accounts — reusing the same plan/review
+engines underneath. Every reply comes with tappable follow-up suggestion
+chips. When it has to assume something (your age, a timeframe) it says so
+and tells you what to add for a tighter answer.
+
+**b) Financial checkup** (`GET /planner/review`) — runs automatically when
+the page loads, like an advisor reviewing your file before talking goals.
+Four areas, each rated good / watch / needs action with specific naira
+numbers:
+
+- **Emergency fund** — months of typical expenses covered by liquid savings
+  (target: 6 months in a money market fund).
+- **Savings rate** — what % of detected income survives the month (benchmark:
+  20%).
+- **Debt load** — liabilities as a share of assets, with the reminder that
+  Nigerian loan rates usually beat any safe investment return.
+- **Idle cash** — flags naira sitting in current accounts beyond the
+  emergency fund, where inflation eats it.
+
+**c) Goal planner** (`POST /planner/plan`) — three modes:
+
+- **Retire early** — "I have ₦1,000,000, I want to retire at 40": computes
+  the pot needed to sustain your lifestyle indefinitely (safe-withdrawal-rate
+  rule), the exact monthly amount to save and invest, your implied savings
+  rate and lifestyle cap, and a feasibility verdict
+  (`on_track / achievable / stretch / unrealistic`). When it's a stretch, it
+  quantifies the alternatives: retiring 5 years later, or a 20% leaner
+  lifestyle.
+- **Save for a target** — house deposit, school fees, a car: target amount +
+  horizon → required monthly saving. Goals under 3 years away automatically
+  get a capital-preservation allocation regardless of chosen risk appetite —
+  growth assets are too volatile that close to the finish line.
+- **Grow my wealth** — no fixed target: projects what your capital + monthly
+  savings compound into over the horizon, and shows how much of the outcome
+  is growth vs money you put in.
+
+Every plan includes a **risk-appetite-driven allocation with Nigerian
+instruments** (T-bills/money market, FGN bonds, NGX index funds, dollar
+assets/Eurobond funds, REITs, and a capped crypto sleeve for aggressive) with
+a one-line rationale per slice, plus written advice and explicit assumptions.
+All returns are stated in *real* (inflation-adjusted) terms — critical in a
+high-inflation economy — so every figure reads in today's naira.
+
+The form prefills from your data (`GET /planner/defaults`): average monthly
+spend, liquid+invested balances as starting capital, and income − expenses
+as monthly saving capacity — all overridable.
+
+**This is a deterministic rule engine** behind a `FinancialPlanner` interface
+(`api/src/planner/planner.interface.ts`), same pattern as everything else:
+swap in a live-market-data or LLM-backed implementation with
+`FINANCIAL_PLANNER=openai` in `api/.env` without touching the page. It is
+educational guidance, not licensed financial advice, and says so in its
+assumptions.
+
+**Try it:** `/coach` → ask the chat *"I have 1m and want to retire at 40,
+what should I do?"* or tap a suggestion chip. The checkup loads on its own
+below it. Then pick "Retire early", set age 30 → retire at 40, and hit
+**Build my plan** for the full breakdown — verdict, allocation bars, monthly
+saving required, and what retiring at 45 instead would cost. Try "Save for
+a target" with a 2-year horizon to see the short-horizon allocation
+override kick in.
+
+---
+
+## 8. "Can I afford this?" purchase simulator
 
 `POST /simulator/afford-check` (`api/src/simulator`) checks a hypothetical
 purchase against your real liquid balance (bank + cash accounts), your
@@ -185,7 +267,7 @@ has a tight budget to see the budget-impact warning appended to the message.
 
 ---
 
-## 8. Spending alerts (WhatsApp/Telegram-style)
+## 9. Spending alerts (WhatsApp/Telegram-style)
 
 `api/src/alerts` implements the "non-intrusive alerts on your phone" idea
 from the brief. It's built the same way as the bank/categorizer/insights
@@ -221,7 +303,7 @@ for real — WhatsApp's Business API requires Meta business verification.
 
 ---
 
-## 9. Monthly budgets
+## 10. Monthly budgets
 
 Per-category spending limits for the current month (`api/src/budgets`).
 "Spent" is computed live from actual `EXPENSE` transactions in that category
@@ -234,7 +316,7 @@ the progress bar updates on next load.
 
 ---
 
-## 10. Goals
+## 11. Goals
 
 Simple savings goals with a target amount, optional target date, and current
 progress (`api/src/goals`).
@@ -245,7 +327,7 @@ account — see "Known limitations" below.)
 
 ---
 
-## 11. Cash flow & category reports
+## 12. Cash flow & category reports
 
 `/reports` — a 12-month income/expense/net line chart and a pie chart of
 current-month spending by category (`api/src/reports`). The dashboard shows
@@ -257,7 +339,7 @@ principle as budgets).
 
 ---
 
-## 12. Responsive design & theme
+## 13. Responsive design & theme
 
 The web app is built mobile-first and styled to feel like a native app on a
 phone, not just a shrunk desktop site:
@@ -284,22 +366,26 @@ page to confirm it stuck.
 
 1. Log in with the demo account.
 2. `/dashboard` — confirm a non-zero net worth, a populated cash flow chart,
-   a health score ring, at least one AI insight card, and the "Can I afford
+   a health score ring, the AI-insight popup rotating in the corner (dismiss
+   it, confirm the sparkles bubble brings it back), and the "Can I afford
    this?" widget returns a verdict.
-3. `/accounts` — connect a new mock bank; confirm it appears with a balance
+3. `/coach` — confirm the financial checkup shows rated cards with real
+   numbers, then build a "Retire early" plan (age 30 → 40) and confirm a
+   verdict, allocation bars, and advice render.
+4. `/accounts` — connect a new mock bank; confirm it appears with a balance
    and "Synced ..." timestamp.
-4. `/transactions` — confirm the new account's transactions appear,
+5. `/transactions` — confirm the new account's transactions appear,
    pre-categorized; recategorize one and confirm it sticks on reload.
-5. `/budgets` — add a budget for a category you just recategorized a
+6. `/budgets` — add a budget for a category you just recategorized a
    transaction into; confirm "spent" reflects it.
-6. `/goals` — add a goal, confirm the progress bar renders.
-7. `/reports` — confirm both charts render with real numbers.
-8. `/settings` — enable alerts, send a test alert, run "Check for alerts
+7. `/goals` — add a goal, confirm the progress bar renders.
+8. `/reports` — confirm both charts render with real numbers.
+9. `/settings` — enable alerts, send a test alert, run "Check for alerts
    now", confirm both show up in the list below.
-9. Resize to a phone-width window — confirm the bottom tab bar appears and
+10. Resize to a phone-width window — confirm the bottom tab bar appears and
    the top nav links disappear; toggle the theme and reload to confirm it
    persists.
-10. Log out, confirm `/dashboard` redirects to `/login` rather than flashing
+11. Log out, confirm `/dashboard` redirects to `/login` rather than flashing
     any data.
 
 ---
@@ -311,6 +397,7 @@ page to confirm it stuck.
 | Bank connection | `MockBankProvider` | `BANK_PROVIDER=mono\|okra` | Mono, Okra, OnePipe, Stitch |
 | Transaction categorization | `MockCategorizer` (keyword rules) | `CATEGORIZER=openai` | OpenAI / any LLM |
 | Dashboard insights | `RuleBasedAdvisor` (deterministic) | `AI_ADVISOR=openai` | OpenAI / any LLM |
+| AI coach (checkup & plans) | `RuleBasedPlanner` (deterministic) | `FINANCIAL_PLANNER=openai` | OpenAI / any LLM, live market-data APIs |
 | Spending alerts | `MockAlertChannel` (logs + records) | `ALERT_CHANNEL=telegram` | Telegram Bot API (free), WhatsApp Business API |
 
 In every case, the mock and the real implementation share one TypeScript
@@ -330,10 +417,10 @@ Every bullet from the original product brief, checked against what's built:
 |---|---|
 | Dashboard showing current net worth | ✅ `/dashboard`, `GET /reports/net-worth` |
 | Automatic income and expense categorization | ✅ §5 |
-| Cash flow reports | ✅ §11 |
-| Monthly budgets | ✅ §9 |
+| Cash flow reports | ✅ §12 |
+| Monthly budgets | ✅ §10 |
 | Asset tracking (cash, investments, vehicles, property) | ✅ §3 — cash, crypto, stocks, mutual funds, property, vehicles all as distinct account types |
-| Goal tracking | ✅ §10 |
+| Goal tracking | ✅ §11 |
 | Real-time bank connections (live events *and* scheduled syncing, per the brief's own caveat) | ✅ §4 — webhook + 5-min cron, not just manual sync |
 | AI-powered categorization | ✅ §5, swappable to a real LLM |
 | Net worth calculation (assets − liabilities, with the specific subtypes listed: bank/cash/crypto/stocks/mutual funds/property/vehicles minus loans/credit facilities/mortgages) | ✅ §2 — every listed subtype is its own `AccountType` |
@@ -342,19 +429,18 @@ Every bullet from the original product brief, checked against what's built:
 
 | Requested | Status |
 |---|---|
-| AI financial coach | 🟡 the AI Insights panel (§6) is a lightweight version of this; no conversational chat interface |
+| AI financial coach | ✅ §7 — free-text advisor chat + financial checkup + retirement/target/growth planning with Nigerian asset allocations, on top of the passive insights (§6) |
 | Nigerian spending insights | ✅ categorization rules and seed data are NG-specific (UBER, SHOPRITE, MTN, IKEDC, DSTV, JUMIA...), all amounts in NGN |
 | Bill prediction | ✅ §6 — recurring-charge detection |
 | Salary prediction | ✅ §6 |
 | Subscription detection | ✅ §6 |
-| "Can I afford this?" purchase simulator | ✅ §7 |
-| Personalized saving recommendations | ✅ §6 |
+| "Can I afford this?" purchase simulator | ✅ §8 |
+| Personalized saving recommendations | ✅ §6 + §7 — passive nudges plus full savings/investment plans |
 | Daily financial health score | ✅ §6 — computed fresh on every dashboard load (not a cached once-a-day snapshot, but always current) |
-| WhatsApp or Telegram spending alerts | ✅ §8 (mocked, swappable to real Telegram Bot API) |
+| WhatsApp or Telegram spending alerts | ✅ §9 (mocked, swappable to real Telegram Bot API) |
 
-**Not built:** the AI coach as a full conversational/chat interface, and a
-native mobile app (the brief suggested Flutter; this scaffold is a
-responsive web app styled to feel like one — see §12). Revenue model and
+**Not built:** a native mobile app (the brief suggested Flutter; this scaffold is a
+responsive web app styled to feel like one — see §13). Revenue model and
 tech-stack sections of the brief were business/architecture decisions, not
 features to implement.
 
@@ -362,5 +448,7 @@ features to implement.
 
 Not in this MVP: production auth hardening (refresh tokens, rate limiting),
 goal progress tied automatically to a specific account balance (it's a
-manually-updated `currentAmount` today), and a full conversational AI coach
-(the insights panel covers the same ground passively rather than via chat).
+manually-updated `currentAmount` today), and true LLM conversation for the advisor
+chat — it parses intents/amounts deterministically and has no memory of
+earlier turns (the `FinancialPlanner.chat` interface is where a real LLM
+would plug in via `FINANCIAL_PLANNER=openai`).

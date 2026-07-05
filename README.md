@@ -1,10 +1,11 @@
 # NetWealth
 
 MVP scaffold for a Nigerian personal finance app: net worth dashboard, automatic
-transaction categorization, AI-powered dashboard insights, cash flow reports,
-monthly budgets, asset/liability tracking, and goal tracking. Responsive web
-app styled like a mobile app (bottom tab bar on phone screens) with a
-light/dark theme toggle.
+transaction categorization, AI-powered insights, an AI coach (financial
+checkup + goal/retirement/investment planning), cash flow reports, monthly
+budgets, asset/liability tracking, and goal tracking. Responsive web app
+styled like a mobile app (bottom tab bar on phone screens) with a light/dark
+theme toggle.
 
 See [`FEATURES.md`](./FEATURES.md) for a full feature walkthrough, a
 step-by-step guide to testing everything, and an audit of this build against
@@ -23,9 +24,11 @@ host it (Render for the API, Vercel for the web app).
   a schedule, and via a simulated webhook
 - **Categorization**: pluggable `Categorizer` interface, currently backed by a
   `MockCategorizer` using keyword rules matching the same transactions above
-- **AI insights & alerts**: pluggable `AiAdvisor` and `AlertChannel`
-  interfaces, currently backed by a deterministic rule engine and a mock
-  channel that logs what a WhatsApp/Telegram alert would have sent
+- **AI insights, coach & alerts**: pluggable `AiAdvisor`, `FinancialPlanner`
+  and `AlertChannel` interfaces, currently backed by deterministic rule
+  engines (insights, financial checkup, and goal/retirement/investment
+  planning) and a mock channel that logs what a WhatsApp/Telegram alert
+  would have sent
 
 All of these integration points are designed to be swapped for real providers
 (Mono/Okra/OnePipe/Stitch for banking; OpenAI for categorization and
@@ -111,7 +114,15 @@ the API runs elsewhere.
   spending breakdown
 - AI insights: `GET /insights` — financial health score, budget/spend-spike
   warnings, subscription & salary detection, savings recommendations, shown
-  as a non-intrusive card list on the dashboard (see `FEATURES.md`)
+  as a rotating corner popup on the dashboard (one insight at a time,
+  auto-cycling, dismissible — not an ever-growing list; see `FEATURES.md`)
+- AI coach / financial advisor: `POST /planner/chat` (free-text advisor
+  Q&A — "I have ₦1m and want to retire at 40, what should I do?"),
+  `GET /planner/review` (holistic financial checkup — emergency fund,
+  savings rate, debt load, idle cash), `GET /planner/defaults` (prefills
+  from your real data), and `POST /planner/plan` — retirement,
+  target-amount, and wealth-growth plans with risk-appetite-driven Nigerian
+  asset allocations, required monthly savings, and feasibility verdicts
 - Purchase simulator: `POST /simulator/afford-check` — "can I afford this?"
   check against liquid balance, recent spending, and budget impact
 - Spending alerts: `GET/PATCH /alerts/settings`, `POST /alerts/test`,
@@ -138,6 +149,13 @@ set `CATEGORIZER=openai` plus `OPENAI_API_KEY` in `api/.env`.
 `insights.module.ts`'s factory (keyed off `AI_ADVISOR` env var), and set
 `AI_ADVISOR=openai` plus `OPENAI_API_KEY` in `api/.env`.
 
+**Financial planner** (AI coach checkup & plans) — implement `FinancialPlanner`
+(`api/src/planner/planner.interface.ts`), register it in
+`planner.module.ts`'s factory (keyed off `FINANCIAL_PLANNER` env var), and
+set `FINANCIAL_PLANNER=openai` plus `OPENAI_API_KEY` in `api/.env` — e.g. to
+back the plans with live market data or an LLM instead of the deterministic
+rule engine.
+
 **Alert channel** (WhatsApp/Telegram) — implement `AlertChannel`
 (`api/src/alerts/alert-channel.interface.ts`), register it in
 `alerts.module.ts`'s factory (keyed off `ALERT_CHANNEL` env var), and set
@@ -148,6 +166,9 @@ Bot API is free and the simplest real option to wire up first.
 
 This scaffold covers the full MVP feature list (see `FEATURES.md` for the
 audit against the original brief) but does not include: production auth
-hardening (refresh tokens, rate limiting), or a native mobile app (spec
+hardening (refresh tokens, rate limiting), true LLM conversation for the
+advisor chat (it parses intents deterministically today, with no memory of
+earlier turns; `FinancialPlanner.chat` is where an LLM slots in), or a
+native mobile app (spec
 suggested Flutter; this scaffold ships a responsive web app styled to feel
 like one instead — bottom tab bar, light/dark theme).

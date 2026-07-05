@@ -35,7 +35,7 @@ export default function RootLayout({
         <ThemeProvider>
           <AuthProvider>
             <Nav />
-            <main className="mx-auto max-w-6xl px-4 py-6 pb-24 sm:px-6 sm:py-8 md:pb-8">
+            <main className="mx-auto max-w-6xl px-4 py-6 pb-24 sm:px-6 sm:py-8 lg:pb-8">
               {children}
             </main>
             <BottomNav />
